@@ -1,0 +1,1 @@
+cmd='/home/alecajuice/ilemt-dual-rate-ukf/build/matioX/src/matioX/configure;--prefix=<INSTALL_DIR>;--enable-shared=no'

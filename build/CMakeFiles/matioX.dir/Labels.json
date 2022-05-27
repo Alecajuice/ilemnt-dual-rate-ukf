@@ -1,0 +1,43 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "/home/alecajuice/ilemt-dual-rate-ukf/build/CMakeFiles/matioX"
+		},
+		{
+			"file" : "/home/alecajuice/ilemt-dual-rate-ukf/build/CMakeFiles/matioX.rule"
+		},
+		{
+			"file" : "/home/alecajuice/ilemt-dual-rate-ukf/build/CMakeFiles/matioX-complete.rule"
+		},
+		{
+			"file" : "/home/alecajuice/ilemt-dual-rate-ukf/build/matioX/src/matioX-stamp/matioX-install.rule"
+		},
+		{
+			"file" : "/home/alecajuice/ilemt-dual-rate-ukf/build/matioX/src/matioX-stamp/matioX-mkdir.rule"
+		},
+		{
+			"file" : "/home/alecajuice/ilemt-dual-rate-ukf/build/matioX/src/matioX-stamp/matioX-download.rule"
+		},
+		{
+			"file" : "/home/alecajuice/ilemt-dual-rate-ukf/build/matioX/src/matioX-stamp/matioX-update.rule"
+		},
+		{
+			"file" : "/home/alecajuice/ilemt-dual-rate-ukf/build/matioX/src/matioX-stamp/matioX-patch.rule"
+		},
+		{
+			"file" : "/home/alecajuice/ilemt-dual-rate-ukf/build/matioX/src/matioX-stamp/matioX-configure.rule"
+		},
+		{
+			"file" : "/home/alecajuice/ilemt-dual-rate-ukf/build/matioX/src/matioX-stamp/matioX-build.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"matioX"
+		],
+		"name" : "matioX"
+	}
+}

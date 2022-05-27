@@ -1,0 +1,3 @@
+repository='external project URL'
+module='https://github.com/tbeu/matio/releases/download/v1.5.15/matio-1.5.15.tar.gz'
+tag='MD5=b1436ac47cf66d53ed9f892d0ae027ca'

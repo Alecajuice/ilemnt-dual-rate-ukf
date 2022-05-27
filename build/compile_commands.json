@@ -1,0 +1,12 @@
+[
+{
+  "directory": "/home/alecajuice/ilemt-dual-rate-ukf/build",
+  "command": "/usr/bin/g++   -I/home/alecajuice/ilemt-dual-rate-ukf/include  -g   -o CMakeFiles/ilemt-dual-rate-ukf.dir/dual_rate_ukf.cpp.o -c /home/alecajuice/ilemt-dual-rate-ukf/dual_rate_ukf.cpp",
+  "file": "/home/alecajuice/ilemt-dual-rate-ukf/dual_rate_ukf.cpp"
+},
+{
+  "directory": "/home/alecajuice/ilemt-dual-rate-ukf/build",
+  "command": "/usr/bin/g++   -I/home/alecajuice/ilemt-dual-rate-ukf/include  -g   -o CMakeFiles/ilemt-dual-rate-ukf.dir/low_rate_ukf.cpp.o -c /home/alecajuice/ilemt-dual-rate-ukf/low_rate_ukf.cpp",
+  "file": "/home/alecajuice/ilemt-dual-rate-ukf/low_rate_ukf.cpp"
+}
+]
