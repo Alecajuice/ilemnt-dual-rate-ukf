@@ -3,10 +3,10 @@
 
 /* Calibration struct definition */
 typedef struct calibration {
-    real_t d_source_pos[9];
-    real_t d_source_moment[9];
-    real_t d_sensor_pos[9];
-    real_t d_sensor_moment[9];
+    UKF::Matrix<3, 3> d_source_pos;
+    UKF::Matrix<3, 3> d_source_moment;
+    UKF::Matrix<3, 3> d_sensor_pos;
+    UKF::Matrix<3, 3> d_sensor_moment;
 } calibration_t;
 
 extern calibration_t calibration_hi;
@@ -18,6 +18,6 @@ typedef UKF::Vector<9> coupling_t;
 /*  */
 coupling_t forward_kinematics(UKF::Vector<3> position,
                                   UKF::Vector<3> orientation,
-                                  calibration_t calibration);
+                                  calibration_t& calibration);
 
 #endif
