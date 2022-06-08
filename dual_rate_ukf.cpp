@@ -54,7 +54,7 @@ coupling_t forward_kinematics(UKF::Vector<3> position,
             coupling(3 * i + j) = B.dot(sensor_moment);
         }
     }
-    std::cout << coupling << std::endl;
+    // std::cout << coupling << std::endl;
     return coupling;
 }
 

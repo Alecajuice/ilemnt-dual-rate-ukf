@@ -6,14 +6,6 @@
 
 #IncludeRegexTransform: 
 
-../include/MATio
-sstream
--
-mutex
--
-matio.h
-../include/matio.h
-
 ../include/UKF/Config.h
 
 ../include/UKF/Core.h
@@ -72,12 +64,12 @@ Eigen/Core
 UKF/Config.h
 ../include/UKF/UKF/Config.h
 
-/home/alecajuice/ilemt-dual-rate-ukf/dual_rate_ukf.cpp
+/home/alecajuice/ilemt-dual-rate-ukf/dual_rate_ukf.h
+
+/home/alecajuice/ilemt-dual-rate-ukf/low_rate_ukf.cpp
 Eigen/Core
 -
 Eigen/Geometry
--
-Eigen/Dense
 -
 cmath
 -
@@ -93,10 +85,8 @@ UKF/Core.h
 /home/alecajuice/ilemt-dual-rate-ukf/UKF/Core.h
 dual_rate_ukf.h
 /home/alecajuice/ilemt-dual-rate-ukf/dual_rate_ukf.h
-MATio
-/home/alecajuice/ilemt-dual-rate-ukf/MATio
 iostream
 -
-
-/home/alecajuice/ilemt-dual-rate-ukf/dual_rate_ukf.h
+chrono
+-
 

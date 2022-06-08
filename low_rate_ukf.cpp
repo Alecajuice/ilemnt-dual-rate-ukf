@@ -9,6 +9,7 @@
 #include "UKF/Core.h"
 #include "dual_rate_ukf.h"
 #include <iostream>
+#include <chrono>
 
 /* State vector definition */
 enum Low_States {
@@ -105,10 +106,8 @@ Eigen::Matrix<real_t, Eigen::Dynamic, 9> run_low_ukf(
     filter.state.set_field<Position>(UKF::Vector<3>::Zero());
     filter.state.set_field<Orientation>(UKF::Vector<3>::Zero());
     filter.state.set_field<Coupling_Bias>(UKF::Vector<9>::Zero());
-    std::cout << filter.state.get_field<Coupling_Bias>() << std::endl;
 
     filter.covariance = Low_StateVector::CovarianceMatrix::Identity() * initial_variance;
-    std::cout << filter.covariance << std::endl;
 
     Eigen::Vector<real_t, 15> process_cov;
     process_cov <<
@@ -116,31 +115,39 @@ Eigen::Matrix<real_t, Eigen::Dynamic, 9> run_low_ukf(
         Eigen::Vector<real_t, 3>::Constant(process_noise_rot),
         Eigen::Vector<real_t, 9>::Constant(process_noise_bias);
     filter.process_noise_covariance = process_cov.asDiagonal();
-    std::cout << filter.process_noise_covariance << std::endl;
 
     filter.measurement_covariance <<
         Eigen::Vector<real_t, 9>::Constant(measurement_noise_hi),
         Eigen::Vector<real_t, 9>::Constant(measurement_noise_lo);
-    std::cout << filter.measurement_covariance << std::endl;
 
     // Iterate
+    auto prevtime = std::chrono::high_resolution_clock::now();
+
     for (int i = 0; i < coupling_lo.rows(); i++) {
+        std::cout << "iteration: " << i << std::endl;
+
         Low_MeasurementVector meas;
         meas.set_field<High_At_Low_Coupling>(coupling_t(coupling_hi_at_lo(i, Eigen::all)));
         meas.set_field<Low_Coupling>(coupling_t(coupling_lo(i, Eigen::all)));
 
         // filter.step(dt, meas);
         filter.a_priori_step(dt);
+        auto time1 = std::chrono::high_resolution_clock::now();
         // std::cout << "1: " << filter.state.get_field<Coupling_Bias>() << std::endl;
         filter.innovation_step(meas);
+        auto time2 = std::chrono::high_resolution_clock::now();
         // std::cout << "2: " << filter.state.get_field<Coupling_Bias>() << std::endl;
         filter.a_posteriori_step();
+        auto time3 = std::chrono::high_resolution_clock::now();
         // std::cout << "3: " << filter.state.get_field<Coupling_Bias>() << std::endl;
 
         biases(i, Eigen::all) = filter.state.get_field<Coupling_Bias>();
-        // std::cout << "pose: " << filter.state.get_field<Position>() << filter.state.get_field<Orientation>() << std::endl;
-        // std::cout << "bias: " << filter.state.get_field<Coupling_Bias>() << std::endl;
-        std::cout << i << std::endl;
+        std::cout << "time1: " << std::chrono::duration_cast<std::chrono::nanoseconds>(time1 - prevtime).count() << std::endl;
+        std::cout << "time2: " << std::chrono::duration_cast<std::chrono::nanoseconds>(time2 - time1).count() << std::endl;
+        std::cout << "time3: " << std::chrono::duration_cast<std::chrono::nanoseconds>(time3 - time2).count() << std::endl;
+        auto curtime = std::chrono::high_resolution_clock::now();
+        std::cout << "total time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(curtime - prevtime).count() << std::endl;
+        prevtime = curtime;
     }
     
     return biases;
