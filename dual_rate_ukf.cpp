@@ -11,6 +11,7 @@
 #include "dual_rate_ukf.h"
 #include "MATio"
 #include <iostream>
+#include <string>
 
 calibration_t calibration_hi;
 calibration_t calibration_lo;
@@ -51,7 +52,7 @@ coupling_t forward_kinematics(UKF::Vector<3> position,
                     calibration.d_source_moment(Eigen::all, i));
 
             // coupling matrix using antenna model
-            coupling(3 * i + j) = B.dot(sensor_moment);
+            coupling(3 * i + j) = B.dot(sensor_moment) / 250;
         }
     }
     // std::cout << coupling << std::endl;
@@ -63,7 +64,8 @@ int main() {
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> couplings_hi_at_lo;
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> couplings_lo;
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> couplings_hi;
-  
+    
+    std::string trace = "aluminum_sheet";
     try {
         // Read calibration files
         matio::read_mat("XYZ_hr_cal.mat", "d_source_pos", calibration_hi.d_source_pos);
@@ -76,13 +78,21 @@ int main() {
         matio::read_mat("XYZ_lr_cal.mat", "d_sensor_moment", calibration_lo.d_sensor_moment);
 
         // Read coupling files
-        matio::read_mat("aluminum_sheet_couplings.mat", "couplings_hi_at_lo", couplings_hi_at_lo);
-        matio::read_mat("aluminum_sheet_couplings.mat", "couplings_lo", couplings_lo);
-        matio::read_mat("aluminum_sheet_couplings.mat", "couplings_hi", couplings_hi);
+        matio::read_mat(trace + "_couplings.mat", "couplings_hi_at_lo", couplings_hi_at_lo);
+        matio::read_mat(trace + "_couplings.mat", "couplings_lo", couplings_lo);
+        matio::read_mat(trace + "_couplings.mat", "couplings_hi", couplings_hi);
     }
     catch (const std::exception & ex) {
         std::cout << "error:" << ex.what() << std::endl;
     }
+
+    // UKF::Vector<3> p = {0.0883, 0.1543, 0.0977};
+    // UKF::Vector<3> o = {-0.9552, 2.1783, 0.4121};
+    // UKF::Vector<3> p = {0.1107, 0.1600, 0.1177};
+    // UKF::Vector<3> o = {-2.2159, 0.8268, -0.3796};
+
+    // std::cout << "lo " << forward_kinematics(p, o, calibration_lo) << std::endl;
+    // std::cout << "hi " << forward_kinematics(p, o, calibration_hi) << std::endl;
 
     // // fk testing
     // auto P = pose2trans({1,2,3}, {4,5,6});
@@ -100,10 +110,13 @@ int main() {
     // std::cout << coupling << std::endl;
 
     // UKF
-    auto biases = run_low_ukf(couplings_hi_at_lo, couplings_lo);
-    std::cout << biases << std::endl;
+    Eigen::Matrix<real_t, Eigen::Dynamic, 9> biases;
+    // while (true) {
+    biases = run_low_ukf(couplings_hi_at_lo, couplings_lo);
+    // }
+    // std::cout << biases << std::endl;
     try {
-        matio::write_mat("biases.mat", "biases", biases, true);
+        matio::write_mat(trace + "_biases.mat", "biases", biases, true);
     }
     catch (const std::exception & ex) {
         std::cout << "error:" << ex.what() << std::endl;

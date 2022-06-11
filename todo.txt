@@ -1,1 +1,5 @@
 g++ -I /home/alecajuice/ilemt-dual-rate-ukf/eigen-3.4.0 -I /home/alecajuice/ilemt-dual-rate-ukf/ dual_rate_ukf.cpp low_rate_ukf.cpp -o dual_rate_ukf
+
+import numpy as np
+np.set_printoptions(linewidth=400, formatter={'float': lambda x: "{:7.4f}".format(x) if x !=0 else "       "})
+end
