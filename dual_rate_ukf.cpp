@@ -32,11 +32,11 @@ coupling_t forward_kinematics(UKF::Vector<3> position,
     coupling_t coupling = coupling_t::Zero();
     Eigen::Affine3d P = pose2trans(position, orientation);
     Eigen::Affine3d R = Eigen::Translation3d(-position) * P; // zero out translation portion of P
-    for (int i = 0; i < 3; i++) { // source index
-        for (int j = 0; j < 3; j++) { // sensor index
-            // sensor position and moment in source coordinates
-            Eigen::Vector3d sensor_pos = P * calibration.d_sensor_pos(Eigen::all, j);
-            Eigen::Vector3d sensor_moment = R * calibration.d_sensor_moment(Eigen::all, j);
+    for (int j = 0; j < 3; j++) { // sensor index
+        // sensor position and moment in source coordinates
+        Eigen::Vector3d sensor_pos = P * calibration.d_sensor_pos(Eigen::all, j);
+        Eigen::Vector3d sensor_moment = R * calibration.d_sensor_moment(Eigen::all, j);
+        for (int i = 0; i < 3; i++) { // source index
 
             // vector distance r between source and sensor in source coordinates
             Eigen::Vector3d rSoSe = sensor_pos - calibration.d_source_pos(Eigen::all, i);
@@ -61,9 +61,13 @@ coupling_t forward_kinematics(UKF::Vector<3> position,
 
 int main() {
     std::cout << "Starting dual UKF..." << std::endl;
+    // Inputs
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> couplings_hi_at_lo;
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> couplings_lo;
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> couplings_hi;
+    // Outputs
+    Eigen::Matrix<real_t, Eigen::Dynamic, 9> biases;
+    Eigen::Matrix<real_t, Eigen::Dynamic, 6> poses;
     
     std::string trace = "aluminum_sheet";
     try {
@@ -81,42 +85,29 @@ int main() {
         matio::read_mat(trace + "_couplings.mat", "couplings_hi_at_lo", couplings_hi_at_lo);
         matio::read_mat(trace + "_couplings.mat", "couplings_lo", couplings_lo);
         matio::read_mat(trace + "_couplings.mat", "couplings_hi", couplings_hi);
+
+        // Read bias file
+        matio::read_mat(trace + "_biases.mat", "biases", biases);
     }
     catch (const std::exception & ex) {
         std::cout << "error:" << ex.what() << std::endl;
     }
 
-    // UKF::Vector<3> p = {0.0883, 0.1543, 0.0977};
-    // UKF::Vector<3> o = {-0.9552, 2.1783, 0.4121};
-    // UKF::Vector<3> p = {0.1107, 0.1600, 0.1177};
-    // UKF::Vector<3> o = {-2.2159, 0.8268, -0.3796};
-
-    // std::cout << "lo " << forward_kinematics(p, o, calibration_lo) << std::endl;
-    // std::cout << "hi " << forward_kinematics(p, o, calibration_hi) << std::endl;
-
-    // // fk testing
-    // auto P = pose2trans({1,2,3}, {4,5,6});
-    // auto R = Eigen::Translation3d(-UKF::Vector<3>({1,2,3})) * P;
-    // Eigen::Matrix3d p;
-    // p << 1, 2, 3, 4, 5 ,6 ,7 ,8 ,9;
-    // auto sensor_pos = P * p(Eigen::all, 0);
-    // auto sensor_moment = R * p(Eigen::all, 0);
-    // auto rSoSe = sensor_pos - p(Eigen::all, 1);
-    // auto rSoSeMag = rSoSe.norm();
-    // auto rSoSeUnit = rSoSe / rSoSeMag;
-    // auto B = (1 / std::pow(rSoSeMag, 3)) *
-    //         (3 * p(Eigen::all, 2).dot(rSoSeUnit) * rSoSeUnit - p(Eigen::all, 2));
-    // auto coupling = B.dot(sensor_moment);
-    // std::cout << coupling << std::endl;
-
     // UKF
-    Eigen::Matrix<real_t, Eigen::Dynamic, 9> biases;
-    // while (true) {
-    biases = run_low_ukf(couplings_hi_at_lo, couplings_lo);
-    // }
-    // std::cout << biases << std::endl;
+    std::cout << "Running low rate UKF..." << std::endl;
+    // biases = run_low_ukf(couplings_hi_at_lo, couplings_lo);
+
+    Eigen::Matrix<real_t, Eigen::Dynamic, 9> unbiased_hi =
+        couplings_hi -
+            biases(Eigen::VectorXi::LinSpaced(128 * biases.rows(), 0, biases.rows() - 1), Eigen::all);
+
+    std::cout << "Running high rate UKF..." << std::endl;
+    poses = run_high_ukf(unbiased_hi);
     try {
+        std::cout << "Writing biases to file..." << std::endl;
         matio::write_mat(trace + "_biases.mat", "biases", biases, true);
+        std::cout << "Writing poses to file..." << std::endl;
+        matio::write_mat(trace + "_posesukf_no_dynamics.mat", "posesukf", poses, true);
     }
     catch (const std::exception & ex) {
         std::cout << "error:" << ex.what() << std::endl;

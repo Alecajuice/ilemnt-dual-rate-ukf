@@ -4,7 +4,7 @@ project(ilemt-dual-rate-ukf VERSION 0.1.0)
 include(CTest)
 enable_testing()
 
-add_executable(ilemt-dual-rate-ukf dual_rate_ukf.cpp low_rate_ukf.cpp)
+add_executable(ilemt-dual-rate-ukf dual_rate_ukf.cpp low_rate_ukf.cpp high_rate_ukf.cpp)
 
 include_directories(include)
 

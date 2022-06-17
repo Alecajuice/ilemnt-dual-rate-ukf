@@ -25,4 +25,7 @@ Eigen::Matrix<real_t, Eigen::Dynamic, 9> run_low_ukf(
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> &coupling_hi_at_lo,
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> &coupling_lo);
 
+Eigen::Matrix<real_t, Eigen::Dynamic, 6> run_high_ukf(
+    Eigen::Matrix<real_t, Eigen::Dynamic, 9> &coupling_hi);
+
 #endif

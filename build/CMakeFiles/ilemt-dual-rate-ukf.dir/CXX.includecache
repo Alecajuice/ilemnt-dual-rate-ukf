@@ -66,7 +66,7 @@ UKF/Config.h
 
 /home/alecajuice/ilemt-dual-rate-ukf/dual_rate_ukf.h
 
-/home/alecajuice/ilemt-dual-rate-ukf/low_rate_ukf.cpp
+/home/alecajuice/ilemt-dual-rate-ukf/high_rate_ukf.cpp
 Eigen/Core
 -
 Eigen/Geometry
