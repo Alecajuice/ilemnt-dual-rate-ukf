@@ -133,9 +133,10 @@ Eigen::Matrix<real_t, Eigen::Dynamic, 6> run_high_ukf(
     // filter.measurement_root_covariance = measurement_cov; // Sqrt Core
 
     // Iterate
-    auto prevtime = std::chrono::high_resolution_clock::now();
-
-    for (int i = 0; i < 1000; i++) {
+    auto starttime = std::chrono::high_resolution_clock::now();
+    auto prevtime = starttime;
+    int num_iters = 1000;
+    for (int i = 0; i < num_iters; i++) {
     // for (int i = 0; i < coupling_hi.rows(); i++) {
         std::cout << "iteration: " << i << std::endl;
 
@@ -164,6 +165,9 @@ Eigen::Matrix<real_t, Eigen::Dynamic, 6> run_high_ukf(
         prevtime = curtime;
     }
 
+    auto endtime = std::chrono::high_resolution_clock::now();
+    auto avgtime = std::chrono::duration_cast<std::chrono::nanoseconds>((endtime - starttime) / num_iters).count();
+    std::cout << "average time per iteration: " << avgtime << std::endl;
     // std::cout << poses << std::endl;
     
     return poses;

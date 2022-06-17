@@ -16,40 +16,30 @@
 calibration_t calibration_hi;
 calibration_t calibration_lo;
 
-Eigen::Affine3d pose2trans(UKF::Vector<3> position, UKF::Vector<3> orientation) {
-    real_t mag = orientation.norm();
-    if (mag == 0) {
-        // TODO: what to do in this case
-        return Eigen::Translation3d(position) * Eigen::AngleAxisd(0, Eigen::Vector3d(1, 0, 0));
-    }
-    return Eigen::Translation3d(position) * Eigen::AngleAxisd(mag, orientation / mag);
-}
-
 coupling_t forward_kinematics(UKF::Vector<3> position,
                                   UKF::Vector<3> orientation,
                                   calibration_t& calibration)
 {
     coupling_t coupling = coupling_t::Zero();
-    Eigen::Affine3d P = pose2trans(position, orientation);
-    Eigen::Affine3d R = Eigen::Translation3d(-position) * P; // zero out translation portion of P
+    real_t mag = orientation.norm();
+    Eigen::Affine3d R(Eigen::AngleAxisd(mag, orientation / mag)); // rotation matrix w/ only orientation
+    Eigen::Affine3d P = Eigen::Translation3d(position) * R; // transform w/ both pos and orientation
     for (int j = 0; j < 3; j++) { // sensor index
         // sensor position and moment in source coordinates
-        Eigen::Vector3d sensor_pos = P * calibration.d_sensor_pos(Eigen::all, j);
-        Eigen::Vector3d sensor_moment = R * calibration.d_sensor_moment(Eigen::all, j);
+        Eigen::Vector3d sensor_pos = P * calibration.d_sensor_pos[j];
+        Eigen::Vector3d sensor_moment = R * calibration.d_sensor_moment[j];
         for (int i = 0; i < 3; i++) { // source index
-
             // vector distance r between source and sensor in source coordinates
-            Eigen::Vector3d rSoSe = sensor_pos - calibration.d_source_pos(Eigen::all, i);
+            Eigen::Vector3d rSoSe = sensor_pos - calibration.d_source_pos[i];
             // vector r magnitude
-            real_t rSoSeMag = rSoSe.norm() == 0 ? 1e-10 : rSoSe.norm();
-            // TODO: what to do in this case
+            real_t rSoSeMag = rSoSe.norm();
             // vector r unit
             Eigen::Vector3d rSoSeUnit = rSoSe / rSoSeMag;
 
             // Find magnetic field vector at the sensor location, using the dipole model
+            auto so_mo = calibration.d_source_moment[i];
             Eigen::Vector3d B = (1 / std::pow(rSoSeMag, 3)) *
-                (3 * calibration.d_source_moment(Eigen::all, i).dot(rSoSeUnit) * rSoSeUnit -
-                    calibration.d_source_moment(Eigen::all, i));
+                (3 * so_mo.dot(rSoSeUnit) * rSoSeUnit - so_mo);
 
             // coupling matrix using antenna model
             coupling(3 * i + j) = B.dot(sensor_moment) / 250;
@@ -59,12 +49,22 @@ coupling_t forward_kinematics(UKF::Vector<3> position,
     return coupling;
 }
 
+void preprocess_calibration(pre_calibration_t &pre, calibration_t &cal) {
+    for (int i = 0; i < 3; i++) {
+        cal.d_source_pos[i] = pre.d_source_pos(Eigen::all, i);
+        cal.d_source_moment[i] = pre.d_source_moment(Eigen::all, i);
+        cal.d_sensor_pos[i] = pre.d_sensor_pos(Eigen::all, i);
+        cal.d_sensor_moment[i] = pre.d_sensor_moment(Eigen::all, i);
+    }
+}
+
 int main() {
     std::cout << "Starting dual UKF..." << std::endl;
     // Inputs
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> couplings_hi_at_lo;
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> couplings_lo;
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> couplings_hi;
+    pre_calibration_t pre_hi, pre_lo;
     // Outputs
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> biases;
     Eigen::Matrix<real_t, Eigen::Dynamic, 6> poses;
@@ -72,14 +72,14 @@ int main() {
     std::string trace = "aluminum_sheet";
     try {
         // Read calibration files
-        matio::read_mat("XYZ_hr_cal.mat", "d_source_pos", calibration_hi.d_source_pos);
-        matio::read_mat("XYZ_hr_cal.mat", "d_source_moment", calibration_hi.d_source_moment);
-        matio::read_mat("XYZ_hr_cal.mat", "d_sensor_pos", calibration_hi.d_sensor_pos);
-        matio::read_mat("XYZ_hr_cal.mat", "d_sensor_moment", calibration_hi.d_sensor_moment);
-        matio::read_mat("XYZ_lr_cal.mat", "d_source_pos", calibration_lo.d_source_pos);
-        matio::read_mat("XYZ_lr_cal.mat", "d_source_moment", calibration_lo.d_source_moment);
-        matio::read_mat("XYZ_lr_cal.mat", "d_sensor_pos", calibration_lo.d_sensor_pos);
-        matio::read_mat("XYZ_lr_cal.mat", "d_sensor_moment", calibration_lo.d_sensor_moment);
+        matio::read_mat("XYZ_hr_cal.mat", "d_source_pos", pre_hi.d_source_pos);
+        matio::read_mat("XYZ_hr_cal.mat", "d_source_moment", pre_hi.d_source_moment);
+        matio::read_mat("XYZ_hr_cal.mat", "d_sensor_pos", pre_hi.d_sensor_pos);
+        matio::read_mat("XYZ_hr_cal.mat", "d_sensor_moment", pre_hi.d_sensor_moment);
+        matio::read_mat("XYZ_lr_cal.mat", "d_source_pos", pre_lo.d_source_pos);
+        matio::read_mat("XYZ_lr_cal.mat", "d_source_moment", pre_lo.d_source_moment);
+        matio::read_mat("XYZ_lr_cal.mat", "d_sensor_pos", pre_lo.d_sensor_pos);
+        matio::read_mat("XYZ_lr_cal.mat", "d_sensor_moment", pre_lo.d_sensor_moment);
 
         // Read coupling files
         matio::read_mat(trace + "_couplings.mat", "couplings_hi_at_lo", couplings_hi_at_lo);
@@ -92,6 +92,10 @@ int main() {
     catch (const std::exception & ex) {
         std::cout << "error:" << ex.what() << std::endl;
     }
+
+    // Preprocess calibrations
+    preprocess_calibration(pre_hi, calibration_hi);
+    preprocess_calibration(pre_lo, calibration_lo);
 
     // UKF
     std::cout << "Running low rate UKF..." << std::endl;

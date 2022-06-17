@@ -2,11 +2,18 @@
 #define INTERFACE_H
 
 /* Calibration struct definition */
-typedef struct calibration {
+typedef struct pre_calibration {
     UKF::Matrix<3, 3> d_source_pos;
     UKF::Matrix<3, 3> d_source_moment;
     UKF::Matrix<3, 3> d_sensor_pos;
     UKF::Matrix<3, 3> d_sensor_moment;
+} pre_calibration_t;
+
+typedef struct calibration {
+    UKF::Matrix<3, 1> d_source_pos[3];
+    UKF::Matrix<3, 1> d_source_moment[3];
+    UKF::Matrix<3, 1> d_sensor_pos[3];
+    UKF::Matrix<3, 1> d_sensor_moment[3];
 } calibration_t;
 
 extern calibration_t calibration_hi;

@@ -109,11 +109,11 @@ public:
         sigma_points = state.calculate_sigma_point_distribution(((covariance + process_noise_covariance) *
             (StateVectorType::covariance_size() + Parameters::Lambda<StateVectorType>)).llt().matrixL());
 
-        /* Propagate the sigma points through the process model. */
-        for(std::size_t i = 0; i < StateVectorType::num_sigma(); i++) {
-            sigma_points.col(i) <<
-                StateVectorType(sigma_points.col(i)).template process_model<IntegratorType>(delta, input...);
-        }
+        // /* Propagate the sigma points through the process model. */
+        // for(std::size_t i = 0; i < StateVectorType::num_sigma(); i++) {
+        //     sigma_points.col(i) <<
+        //         StateVectorType(sigma_points.col(i)).template process_model<IntegratorType>(delta, input...);
+        // }
 
         /* Calculate the a priori estimate mean, deltas and covariance. */
         state = StateVectorType::calculate_sigma_point_mean(sigma_points);
