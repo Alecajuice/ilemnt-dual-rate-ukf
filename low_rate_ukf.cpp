@@ -2,6 +2,7 @@
 #include <Eigen/Geometry>
 #include <cmath>
 #define UKF_DOUBLE_PRECISION
+// #define SQRT_CORE
 #include "UKF/Types.h"
 #include "UKF/Integrator.h"
 #include "UKF/StateVector.h"
@@ -76,7 +77,11 @@ coupling_t Low_MeasurementVector::expected_measurement
 }
 
 /* UKF Core definition */
+#ifndef SQRT_CORE
+using Low_Core = UKF::Core<
+#else
 using Low_Core = UKF::SquareRootCore<
+#endif
     Low_StateVector,
     Low_MeasurementVector,
     UKF::IntegratorRK4
@@ -92,8 +97,11 @@ Eigen::Matrix<real_t, Eigen::Dynamic, 9> run_low_ukf(
     Eigen::Matrix<real_t, Eigen::Dynamic, 9> biases(coupling_lo.rows(), 9);
 
     // Const values
-    // const real_t initial_variance = 1e-6;
+#ifndef SQRT_CORE
+    const real_t initial_variance = 1e-6;
+#else
     const real_t initial_variance = 1e-3;
+#endif
 
     const real_t base_process_noise = 2e-3;
     const real_t process_noise_trans = base_process_noise;
@@ -114,25 +122,34 @@ Eigen::Matrix<real_t, Eigen::Dynamic, 9> run_low_ukf(
     filter.state.set_field<Orientation>(UKF::Vector<3>({-0.9552, 2.1783, 0.4121})); // aluminum_sheet
     filter.state.set_field<Coupling_Bias>(UKF::Vector<9>::Zero());
 
-    // filter.covariance = Low_StateVector::CovarianceMatrix::Identity() * initial_variance; // Non-Sqrt Core
-    filter.root_covariance = Low_StateVector::CovarianceMatrix::Identity() * initial_variance; // Sqrt Core
+#ifndef SQRT_CORE
+    filter.covariance = Low_StateVector::CovarianceMatrix::Identity() * initial_variance;
+#else
+    filter.root_covariance = Low_StateVector::CovarianceMatrix::Identity() * initial_variance;
+#endif
 
     Eigen::Vector<real_t, 15> process_cov;
     process_cov <<
         Eigen::Vector<real_t, 3>::Constant(process_noise_trans),
         Eigen::Vector<real_t, 3>::Constant(process_noise_rot),
         Eigen::Vector<real_t, 9>::Constant(process_noise_bias);
-    // process_cov = process_cov.array().pow(2); // Non-Sqrt Core
-    // filter.process_noise_covariance = process_cov.asDiagonal(); // Non-Sqrt Core
-    filter.process_noise_root_covariance = process_cov.asDiagonal(); // Sqrt Core
+#ifndef SQRT_CORE
+    process_cov = process_cov.array().pow(2);
+    filter.process_noise_covariance = process_cov.asDiagonal();
+#else
+    filter.process_noise_root_covariance = process_cov.asDiagonal();
+#endif
 
     Eigen::Vector<real_t, 18> measurement_cov;
     measurement_cov <<
         Eigen::Vector<real_t, 9>::Constant(measurement_noise_hi),
         Eigen::Vector<real_t, 9>::Constant(measurement_noise_lo);
-    // measurement_cov = measurement_cov.array().pow(2); // Non-Sqrt Core
-    // filter.measurement_covariance = measurement_cov; // Non-Sqrt Core
-    filter.measurement_root_covariance = measurement_cov; // Sqrt Core
+#ifndef SQRT_CORE
+    measurement_cov = measurement_cov.array().pow(2);
+    filter.measurement_covariance = measurement_cov;
+#else
+    filter.measurement_root_covariance = measurement_cov;
+#endif
 
     // Iterate
     auto prevtime = std::chrono::high_resolution_clock::now();
@@ -148,27 +165,15 @@ Eigen::Matrix<real_t, Eigen::Dynamic, 9> run_low_ukf(
 
         // filter.step(dt, meas);
         filter.a_priori_step(dt);
-        auto time1 = std::chrono::high_resolution_clock::now();
-        // std::cout << "1: " << filter.state.get_field<Coupling_Bias>() << std::endl;
         filter.innovation_step(meas);
-        auto time2 = std::chrono::high_resolution_clock::now();
-        // std::cout << "2: " << filter.state.get_field<Coupling_Bias>() << std::endl;
         filter.a_posteriori_step();
-        auto time3 = std::chrono::high_resolution_clock::now();
-        // std::cout << "3: " << filter.state.get_field<Coupling_Bias>() << std::endl;
 
         positions(i, Eigen::all) = filter.state.get_field<Position>();
         biases(i, Eigen::all) = filter.state.get_field<Coupling_Bias>();
-        std::cout << "time1: " << std::chrono::duration_cast<std::chrono::nanoseconds>(time1 - prevtime).count() << std::endl;
-        std::cout << "time2: " << std::chrono::duration_cast<std::chrono::nanoseconds>(time2 - time1).count() << std::endl;
-        std::cout << "time3: " << std::chrono::duration_cast<std::chrono::nanoseconds>(time3 - time2).count() << std::endl;
         auto curtime = std::chrono::high_resolution_clock::now();
         std::cout << "total time: " << std::chrono::duration_cast<std::chrono::nanoseconds>(curtime - prevtime).count() << std::endl;
         prevtime = curtime;
     }
-
-    // std::cout << positions << std::endl;
-    // std::cout << biases << std::endl;
     
     return biases;
 }
