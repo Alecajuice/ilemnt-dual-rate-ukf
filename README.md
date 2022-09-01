@@ -34,3 +34,6 @@ You may have to set `export LD_LIBRARY_PATH=/usr/local/lib`
 ```
 build/ilemt-dual-rate-ukf
 ```
+
+## Usage
+You must use the `trace_to_2d.m` script to output new traces to a `*_couplings.mat` file that this implementation can read. Place the file in the directory you run the executable from. Change the `std::string trace` variable in `main()` of `dual_rate_ukf.cpp` to the name of the trace (without "_couplings.mat"). The biases and poses will be written to .mat files that can be opened by MATLAB for visualization.
